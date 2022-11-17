@@ -80,3 +80,4 @@ Temporary Items
 *.orig
 *.rej
 *.bak
+.env
