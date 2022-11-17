@@ -39,10 +39,6 @@ var config = {
 			module: "alert",
 		},
 		{
-			module: "updatenotification",
-			position: "top_bar"
-		},
-		{
 			module: "clock",
 			position: "top_left"
 		},
@@ -75,7 +71,7 @@ var config = {
 				type: "current",
 				location: "Farnborough",
 				locationID: "2649672", //ID from http://bulk.openweathermap.org/sample/city.list.json.gz; unzip the gz file and find your city
-				apiKey: "<OPENWEATHER_API_KEY>"
+				apiKey: process.env.OPENWEATHER_API_KE
 			}
 		},
 		{
@@ -87,7 +83,7 @@ var config = {
 				type: "forecast",
 				location: "Farnborough",
 				locationID: "2649672", //ID from http://bulk.openweathermap.org/sample/city.list.json.gz; unzip the gz file and find your city
-				apiKey: "<OPENWEATHER_API_KEY>"
+				apiKey: process.env.OPENWEATHER_API_KEY
 			}
 		},
 		{
@@ -111,7 +107,7 @@ var config = {
 			position: 'bottom_center',
 			config: {
 				sensorPin: 22,
-				delay: 600000,
+				delay: 60*60*1000,
 				turnOffDisplay: true,
 				showCountdown: true,
 			}
