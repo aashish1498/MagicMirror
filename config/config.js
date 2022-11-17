@@ -50,7 +50,7 @@ var config = {
 				calendars: [
 					{
 						symbol: "calendar-alt",
-						url: process.env.CALENDAR_URL
+						url: "<CALENDAR_URL>"
 					},
 				]
 			}
@@ -71,7 +71,7 @@ var config = {
 				type: "current",
 				location: "Farnborough",
 				locationID: "2649672", //ID from http://bulk.openweathermap.org/sample/city.list.json.gz; unzip the gz file and find your city
-				apiKey: process.env.OPENWEATHER_API_KEY
+				apiKey: "<OPENWEATHER_API_KEY>"
 			}
 		},
 		{
@@ -83,7 +83,7 @@ var config = {
 				type: "forecast",
 				location: "Farnborough",
 				locationID: "2649672", //ID from http://bulk.openweathermap.org/sample/city.list.json.gz; unzip the gz file and find your city
-				apiKey: process.env.OPENWEATHER_API_KEY
+				apiKey: "<OPENWEATHER_API_KEY>"
 			}
 		},
 		{
