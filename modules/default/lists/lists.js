@@ -9,7 +9,7 @@ Module.register("lists", {
     getDom: function () {
       var wrapper = document.createElement("div");
 
-      this.config.list.array.forEach(listItem => {
+      this.config.list.forEach(listItem => {
         var itemWrapper = document.createElement("td");
         
         itemWrapper.innerHTML = listItem;
