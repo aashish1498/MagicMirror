@@ -64,6 +64,10 @@ var config = {
 			position: "lower_third"
 		},
 		{
+			module: "lists",
+			position: "bottom_left"
+		},
+		{
 			module: "weather",
 			position: "top_right",
 			config: {
