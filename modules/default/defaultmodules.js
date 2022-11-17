@@ -4,6 +4,7 @@
  * By Michael Teeuw https://michaelteeuw.nl
  * MIT Licensed.
  */
+
 const defaultModules = ["alert", "calendar", "clock", "compliments", "helloworld", "lists", "newsfeed", "updatenotification", "weather"];
 
 /*************** DO NOT EDIT THE LINE BELOW ***************/
