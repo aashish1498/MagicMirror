@@ -60,10 +60,6 @@ var config = {
 			position: "lower_third"
 		},
 		{
-			module: "lists",
-			position: "bottom_left"
-		},
-		{
 			module: "weather",
 			position: "top_right",
 			config: {
@@ -111,7 +107,25 @@ var config = {
 				turnOffDisplay: true,
 				showCountdown: true,
 			}
-		}
+		},
+		{
+			module: 'MMM-AnyList',
+			position: 'bottom_left',
+			config: {
+			  email: 'your-email',
+			  password: 'your-password',
+			  list: 'your-list-name',
+			  // Optional, values listed are the defaults
+			  onlyShowUnchecked: true,
+			  maxItemsInList: 10,
+			  fade: true,
+			  fadePoint: 0.5,
+			  animationSpeed: 2000,
+			  trimText: true,
+			  showCategories: true,
+			  showQuantities: true
+			}
+		  }
 	]
 
 };

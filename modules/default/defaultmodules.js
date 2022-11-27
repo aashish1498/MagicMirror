@@ -5,7 +5,7 @@
  * MIT Licensed.
  */
 
-const defaultModules = ["alert", "calendar", "clock", "compliments", "helloworld", "lists", "newsfeed", "updatenotification", "weather"];
+const defaultModules = ["alert", "calendar", "clock", "compliments", "helloworld", "newsfeed", "updatenotification", "weather"];
 
 /*************** DO NOT EDIT THE LINE BELOW ***************/
 if (typeof module !== "undefined") {
