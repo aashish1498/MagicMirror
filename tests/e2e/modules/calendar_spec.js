@@ -1,162 +1,183 @@
-const helpers = require("../global-setup");
-const serverBasicAuth = require("./basic-auth.js");
+const helpers = require("../helpers/global-setup");
+const serverBasicAuth = require("../helpers/basic-auth");
 
-describe("Calendar module", function () {
+describe("Calendar module", () => {
+
 	/**
 	 * @param {string} element css selector
 	 * @param {string} result expected number
 	 * @param {string} not reverse result
+	 * @returns {boolean} result
 	 */
-	function testElementLength(element, result, not) {
-		helpers.waitForElement(element).then((elem) => {
-			expect(elem).not.toBe(null);
-			if (not === "not") {
-				expect(elem.length).not.toBe(result);
-			} else {
-				expect(elem.length).toBe(result);
-			}
-		});
-	}
-
-	const testTextContain = function (element, text) {
-		helpers.waitForElement(element).then((elem) => {
-			expect(elem).not.toBe(null);
-			expect(elem.textContent).toContain(text);
-		});
+	const testElementLength = async (element, result, not) => {
+		const elem = await helpers.waitForAllElements(element);
+		expect(elem).not.toBeNull();
+		if (not === "not") {
+			expect(elem).not.toHaveLength(result);
+		} else {
+			expect(elem).toHaveLength(result);
+		}
+		return true;
 	};
 
-	afterAll(async function () {
+	const testTextContain = async (element, text) => {
+		const elem = await helpers.waitForElement(element, "undefinedLoading");
+		expect(elem).not.toBeNull();
+		expect(elem.textContent).toContain(text);
+		return true;
+	};
+
+	afterAll(async () => {
 		await helpers.stopApplication();
 	});
 
-	describe("Default configuration", function () {
-		beforeAll(function (done) {
-			helpers.startApplication("tests/configs/modules/calendar/default.js");
-			helpers.getDocument(done);
+	describe("Default configuration", () => {
+		beforeAll(async () => {
+			await helpers.startApplication("tests/configs/modules/calendar/default.js");
+			await helpers.getDocument();
 		});
 
-		it("should show the default maximumEntries of 10", () => {
-			testElementLength(".calendar .event", 10);
+		it("should show the default maximumEntries of 10", async () => {
+			await expect(testElementLength(".calendar .event", 10)).resolves.toBe(true);
 		});
 
-		it("should show the default calendar symbol in each event", () => {
-			testElementLength(".calendar .event .fa-calendar-alt", 0, "not");
-		});
-	});
-
-	describe("Custom configuration", function () {
-		beforeAll(function (done) {
-			helpers.startApplication("tests/configs/modules/calendar/custom.js");
-			helpers.getDocument(done);
-		});
-
-		it("should show the custom maximumEntries of 4", () => {
-			testElementLength(".calendar .event", 4);
-		});
-
-		it("should show the custom calendar symbol in each event", () => {
-			testElementLength(".calendar .event .fa-birthday-cake", 4);
-		});
-
-		it("should show two custom icons for repeating events", () => {
-			testElementLength(".calendar .event .fa-undo", 2);
-		});
-
-		it("should show two custom icons for day events", () => {
-			testElementLength(".calendar .event .fa-calendar-day", 2);
+		it("should show the default calendar symbol in each event", async () => {
+			await expect(testElementLength(".calendar .event .fa-calendar-alt", 0, "not")).resolves.toBe(true);
 		});
 	});
 
-	describe("Recurring event", function () {
-		beforeAll(function (done) {
-			helpers.startApplication("tests/configs/modules/calendar/recurring.js");
-			helpers.getDocument(done);
+	describe("Custom configuration", () => {
+		beforeAll(async () => {
+			await helpers.startApplication("tests/configs/modules/calendar/custom.js");
+			await helpers.getDocument();
 		});
 
-		it("should show the recurring birthday event 6 times", () => {
-			testElementLength(".calendar .event", 6);
+		it("should show the custom maximumEntries of 5", async () => {
+			await expect(testElementLength(".calendar .event", 5)).resolves.toBe(true);
+		});
+
+		it("should show the custom calendar symbol in four events", async () => {
+			await expect(testElementLength(".calendar .event .fa-birthday-cake", 4)).resolves.toBe(true);
+		});
+
+		it("should show a customEvent calendar symbol in one event", async () => {
+			await expect(testElementLength(".calendar .event .fa-dice", 1)).resolves.toBe(true);
+		});
+
+		it("should show a customEvent calendar eventClass in one event", async () => {
+			await expect(testElementLength(".calendar .event.undo", 1)).resolves.toBe(true);
+		});
+
+		it("should show two custom icons for repeating events", async () => {
+			await expect(testElementLength(".calendar .event .fa-undo", 2)).resolves.toBe(true);
+		});
+
+		it("should show two custom icons for day events", async () => {
+			await expect(testElementLength(".calendar .event .fa-calendar-day", 2)).resolves.toBe(true);
+		});
+	});
+
+	describe("Recurring event", () => {
+		beforeAll(async () => {
+			await helpers.startApplication("tests/configs/modules/calendar/recurring.js");
+			await helpers.getDocument();
+		});
+
+		it("should show the recurring birthday event 6 times", async () => {
+			await expect(testElementLength(".calendar .event", 6)).resolves.toBe(true);
+		});
+	});
+
+	describe("Events from multiple calendars", () => {
+		beforeAll(async () => {
+			await helpers.startApplication("tests/configs/modules/calendar/show-duplicates-in-calendar.js");
+			await helpers.getDocument();
+		});
+
+		it("should show multiple events with the same title and start time from different calendars", async () => {
+			await expect(testElementLength(".calendar .event", 22)).resolves.toBe(true);
 		});
 	});
 
 	process.setMaxListeners(0);
 	for (let i = -12; i < 12; i++) {
-		describe("Recurring event per timezone", function () {
-			beforeAll(function (done) {
-				Date.prototype.getTimezoneOffset = function () {
+		describe("Recurring event per timezone", () => {
+			beforeAll(async () => {
+				Date.prototype.getTimezoneOffset = () => {
 					return i * 60;
 				};
-				helpers.startApplication("tests/configs/modules/calendar/recurring.js");
-				helpers.getDocument(done);
+				await helpers.startApplication("tests/configs/modules/calendar/recurring.js");
+				await helpers.getDocument();
 			});
 
-			it('should contain text "Mar 25th" in timezone UTC ' + -i, () => {
-				testTextContain(".calendar", "Mar 25th");
+			it(`should contain text "Mar 25th" in timezone UTC ${-i}`, async () => {
+				await expect(testTextContain(".calendar", "Mar 25th")).resolves.toBe(true);
 			});
 		});
 	}
 
-	describe("Changed port", function () {
-		beforeAll(function (done) {
-			helpers.startApplication("tests/configs/modules/calendar/changed-port.js");
+	describe("Changed port", () => {
+		beforeAll(async () => {
+			await helpers.startApplication("tests/configs/modules/calendar/changed-port.js");
 			serverBasicAuth.listen(8010);
-			helpers.getDocument(done);
+			await helpers.getDocument();
 		});
 
-		afterAll(function (done) {
-			serverBasicAuth.close(done());
+		afterAll(async () => {
+			await serverBasicAuth.close();
 		});
 
-		it("should return TestEvents", function () {
-			testElementLength(".calendar .event", 0, "not");
-		});
-	});
-
-	describe("Basic auth", function () {
-		beforeAll(function (done) {
-			helpers.startApplication("tests/configs/modules/calendar/basic-auth.js");
-			helpers.getDocument(done);
-		});
-
-		it("should return TestEvents", function () {
-			testElementLength(".calendar .event", 0, "not");
+		it("should return TestEvents", async () => {
+			await expect(testElementLength(".calendar .event", 0, "not")).resolves.toBe(true);
 		});
 	});
 
-	describe("Basic auth by default", function () {
-		beforeAll(function (done) {
-			helpers.startApplication("tests/configs/modules/calendar/auth-default.js");
-			helpers.getDocument(done);
+	describe("Basic auth", () => {
+		beforeAll(async () => {
+			await helpers.startApplication("tests/configs/modules/calendar/basic-auth.js");
+			await helpers.getDocument();
 		});
 
-		it("should return TestEvents", function () {
-			testElementLength(".calendar .event", 0, "not");
-		});
-	});
-
-	describe("Basic auth backward compatibility configuration: DEPRECATED", function () {
-		beforeAll(function (done) {
-			helpers.startApplication("tests/configs/modules/calendar/old-basic-auth.js");
-			helpers.getDocument(done);
-		});
-
-		it("should return TestEvents", function () {
-			testElementLength(".calendar .event", 0, "not");
+		it("should return TestEvents", async () => {
+			await expect(testElementLength(".calendar .event", 0, "not")).resolves.toBe(true);
 		});
 	});
 
-	describe("Fail Basic auth", function () {
-		beforeAll(function (done) {
-			helpers.startApplication("tests/configs/modules/calendar/fail-basic-auth.js");
+	describe("Basic auth by default", () => {
+		beforeAll(async () => {
+			await helpers.startApplication("tests/configs/modules/calendar/auth-default.js");
+			await helpers.getDocument();
+		});
+
+		it("should return TestEvents", async () => {
+			await expect(testElementLength(".calendar .event", 0, "not")).resolves.toBe(true);
+		});
+	});
+
+	describe("Basic auth backward compatibility configuration: DEPRECATED", () => {
+		beforeAll(async () => {
+			await helpers.startApplication("tests/configs/modules/calendar/old-basic-auth.js");
+			await helpers.getDocument();
+		});
+
+		it("should return TestEvents", async () => {
+			await expect(testElementLength(".calendar .event", 0, "not")).resolves.toBe(true);
+		});
+	});
+
+	describe("Fail Basic auth", () => {
+		beforeAll(async () => {
+			await helpers.startApplication("tests/configs/modules/calendar/fail-basic-auth.js");
 			serverBasicAuth.listen(8020);
-			helpers.getDocument(done);
+			await helpers.getDocument();
 		});
 
-		afterAll(function (done) {
-			serverBasicAuth.close(done());
+		afterAll(async () => {
+			await serverBasicAuth.close();
 		});
 
-		it("should show Unauthorized error", function () {
-			testTextContain(".calendar", "Error in the calendar module. Authorization failed");
+		it("should show Unauthorized error", async () => {
+			await expect(testTextContain(".calendar", "Error in the calendar module. Authorization failed")).resolves.toBe(true);
 		});
 	});
 });
