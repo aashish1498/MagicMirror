@@ -1,0 +1,105 @@
+var config = {
+	address: "localhost",
+	port: 8080,
+	ipWhitelist: ["127.0.0.1", "::ffff:127.0.0.1", "::1"],
+	useHttps: false,
+	language: "en",
+	timeFormat: 24,
+	units: "metric",
+	modules: [
+		{
+			module: "alert",
+		},
+		{
+			module: "clock",
+			position: "top_left"
+		},
+		{
+			module: "calendar",
+			header: "Calendar",
+			position: "top_left",
+			config: {
+				calendars: [
+					{
+						symbol: "calendar-alt",
+						url: "${CAL_URL}"
+					},
+					{
+						symbol: "calendar-alt",
+						url: "https://www.calendarlabs.com/ical-calendar/ics/75/UK_Holidays.ics"
+					}
+				]
+			}
+		},
+		{
+			module: "compliments",
+			position: "lower_third"
+		},
+		{
+			module: "weather",
+			position: "top_right",
+			config: {
+				weatherProvider: "openweathermap",
+				type: "current",
+				location: "${WEATHER_LOCATION}",
+				locationID: "${WEATHER_LOCATION_ID}", //ID from http://bulk.openweathermap.org/sample/city.list.json.gz; unzip the gz file and find your city
+				apiKey: "${WEATHER_API_KEY}"
+			}
+		},
+		{
+			module: "weather",
+			position: "top_right",
+			header: "Weather Forecast",
+			config: {
+				weatherProvider: "openweathermap",
+				type: "forecast",
+				location: "${WEATHER_LOCATION}",
+				locationID: "${WEATHER_LOCATION_ID}",
+				apiKey: "${WEATHER_API_KEY}"
+			}
+		},
+		{
+			module: "newsfeed",
+			position: "bottom_bar",
+			config: {
+				feeds: [
+					{
+						title: "BBC News",
+						url: "https://feeds.bbci.co.uk/news/rss.xml"
+					}
+				],
+				showSourceTitle: true,
+				showPublishDate: true,
+				broadcastNewsFeeds: true,
+				broadcastNewsUpdates: true
+			}
+		},
+		{
+			module: 'MMM-PIR',
+			position: 'bottom_center',
+			config: {
+				sensorPin: 22,
+				delay: 30*60*1000,
+				turnOffDisplay: true,
+				showCountdown: true,
+			}
+		},
+		{
+			module: 'MMM-GoogleKeep',
+            position: "bottom_left",
+            header: "Google Keep",
+            config: {
+                username: "${KEEP_USERNAME}",
+                password: "${KEEP_PASSWORD}",
+                noteId: "${KEEP_NOTE_ID}",
+                updateInterval: 60,
+                maxLines: 30,
+                unchecked_only: true,
+			}
+		  }
+	]
+
+};
+
+/*************** DO NOT EDIT THE LINE BELOW ***************/
+if (typeof module !== "undefined") { module.exports = config; }
