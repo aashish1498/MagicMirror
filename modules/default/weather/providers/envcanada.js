@@ -1,4 +1,4 @@
-/* global WeatherProvider, WeatherObject */
+/* global WeatherProvider, WeatherObject, WeatherUtils */
 
 /* MagicMirror²
  * Module: Weather
@@ -11,13 +11,13 @@
  * 	https://dd.weather.gc.ca/citypage_weather/schema/
  * 	https://eccc-msc.github.io/open-data/msc-datamart/readme_en/
  *
- * This module supports Canadian locations only and requires 2 additional config parms:
+ * This module supports Canadian locations only and requires 2 additional config parameters:
  *
  * siteCode - the city/town unique identifier for which weather is to be displayed. Format is 's0000000'.
  *
  * provCode - the 2-character province code for the selected city/town.
  *
- * Example: for Toronto, Ontario, the following parms would be used
+ * Example: for Toronto, Ontario, the following parameters would be used
  *
  * siteCode: 's0000458',
  * provCode: 'ON'
@@ -49,7 +49,7 @@ WeatherProvider.register("envcanada", {
 	// Set config values (equates to weather module config values). Also set values pertaining to caching of
 	// Today's temperature forecast (for use in the Forecast functions below)
 	//
-	setConfig: function (config) {
+	setConfig (config) {
 		this.config = config;
 
 		this.todayTempCacheMin = 0;
@@ -61,20 +61,16 @@ WeatherProvider.register("envcanada", {
 	//
 	// Called when the weather provider is started
 	//
-	start: function () {
+	start () {
 		Log.info(`Weather provider: ${this.providerName} started.`);
 		this.setFetchedLocation(this.config.location);
-
-		// Ensure kmH are ignored since these are custom-handled by this Provider
-
-		this.config.useKmh = false;
 	},
 
 	//
 	// Override the fetchCurrentWeather method to query EC and construct a Current weather object
 	//
-	fetchCurrentWeather() {
-		this.fetchData(this.getUrl(), "GET", "xml")
+	fetchCurrentWeather () {
+		this.fetchData(this.getUrl(), "xml")
 			.then((data) => {
 				if (!data) {
 					// Did not receive usable new data.
@@ -93,8 +89,8 @@ WeatherProvider.register("envcanada", {
 	//
 	// Override the fetchWeatherForecast method to query EC and construct Forecast weather objects
 	//
-	fetchWeatherForecast() {
-		this.fetchData(this.getUrl(), "GET", "xml")
+	fetchWeatherForecast () {
+		this.fetchData(this.getUrl(), "xml")
 			.then((data) => {
 				if (!data) {
 					// Did not receive usable new data.
@@ -113,8 +109,8 @@ WeatherProvider.register("envcanada", {
 	//
 	// Override the fetchWeatherHourly method to query EC and construct Forecast weather objects
 	//
-	fetchWeatherHourly() {
-		this.fetchData(this.getUrl(), "GET", "xml")
+	fetchWeatherHourly () {
+		this.fetchData(this.getUrl(), "xml")
 			.then((data) => {
 				if (!data) {
 					// Did not receive usable new data.
@@ -137,20 +133,20 @@ WeatherProvider.register("envcanada", {
 	//////////////////////////////////////////////////////////////////////////////////
 
 	//
-	// Build the EC URL based on the Site Code and Province Code specified in the config parms. Note that the
-	// URL defaults to the Englsih version simply because there is no language dependancy in the data
+	// Build the EC URL based on the Site Code and Province Code specified in the config params. Note that the
+	// URL defaults to the English version simply because there is no language dependency in the data
 	// being accessed. This is only pertinent when using the EC data elements that contain a textual forecast.
 	//
-	getUrl() {
-		return "https://dd.weather.gc.ca/citypage_weather/xml/" + this.config.provCode + "/" + this.config.siteCode + "_e.xml";
+	getUrl () {
+		return `https://dd.weather.gc.ca/citypage_weather/xml/${this.config.provCode}/${this.config.siteCode}_e.xml`;
 	},
 
 	//
 	// Generate a WeatherObject based on current EC weather conditions
 	//
 
-	generateWeatherObjectFromCurrentWeather(ECdoc) {
-		const currentWeather = new WeatherObject(this.config.units, this.config.tempUnits, this.config.windUnits);
+	generateWeatherObjectFromCurrentWeather (ECdoc) {
+		const currentWeather = new WeatherObject();
 
 		// There are instances where EC will update weather data and current temperature will not be
 		// provided. While this is a defect in the EC systems, we need to accommodate to avoid a current temp
@@ -161,15 +157,15 @@ WeatherProvider.register("envcanada", {
 		// EC finds no current temp. In this scenario, MM will end up displaying a current temp of null;
 
 		if (ECdoc.querySelector("siteData currentConditions temperature").textContent) {
-			currentWeather.temperature = this.convertTemp(ECdoc.querySelector("siteData currentConditions temperature").textContent);
+			currentWeather.temperature = ECdoc.querySelector("siteData currentConditions temperature").textContent;
 			this.cacheCurrentTemp = currentWeather.temperature;
 		} else {
 			currentWeather.temperature = this.cacheCurrentTemp;
 		}
 
-		currentWeather.windSpeed = this.convertWind(ECdoc.querySelector("siteData currentConditions wind speed").textContent);
+		currentWeather.windSpeed = WeatherUtils.convertWindToMs(ECdoc.querySelector("siteData currentConditions wind speed").textContent);
 
-		currentWeather.windDirection = ECdoc.querySelector("siteData currentConditions wind bearing").textContent;
+		currentWeather.windFromDirection = ECdoc.querySelector("siteData currentConditions wind bearing").textContent;
 
 		currentWeather.humidity = ECdoc.querySelector("siteData currentConditions relativeHumidity").textContent;
 
@@ -190,11 +186,11 @@ WeatherProvider.register("envcanada", {
 			currentWeather.feelsLikeTemp = currentWeather.temperature;
 
 			if (ECdoc.querySelector("siteData currentConditions windChill")) {
-				currentWeather.feelsLikeTemp = this.convertTemp(ECdoc.querySelector("siteData currentConditions windChill").textContent);
+				currentWeather.feelsLikeTemp = ECdoc.querySelector("siteData currentConditions windChill").textContent;
 			}
 
 			if (ECdoc.querySelector("siteData currentConditions humidex")) {
-				currentWeather.feelsLikeTemp = this.convertTemp(ECdoc.querySelector("siteData currentConditions humidex").textContent);
+				currentWeather.feelsLikeTemp = ECdoc.querySelector("siteData currentConditions humidex").textContent;
 			}
 		}
 
@@ -220,12 +216,12 @@ WeatherProvider.register("envcanada", {
 	// Generate an array of WeatherObjects based on EC weather forecast
 	//
 
-	generateWeatherObjectsFromForecast(ECdoc) {
+	generateWeatherObjectsFromForecast (ECdoc) {
 		// Declare an array to hold each day's forecast object
 
 		const days = [];
 
-		const weather = new WeatherObject(this.config.units, this.config.tempUnits, this.config.windUnits);
+		const weather = new WeatherObject();
 
 		const foreBaseDates = ECdoc.querySelectorAll("siteData forecastGroup dateTime");
 		const baseDate = foreBaseDates[1].querySelector("timeStamp").textContent;
@@ -234,12 +230,7 @@ WeatherProvider.register("envcanada", {
 
 		const foreGroup = ECdoc.querySelectorAll("siteData forecastGroup forecast");
 
-		// For simplicity, we will only accumulate precipitation and will not try to break out
-		// rain vs snow accumulations
-
-		weather.rain = null;
-		weather.snow = null;
-		weather.precipitation = null;
+		weather.precipitationAmount = null;
 
 		//
 		// The EC forecast is held in a 12-element array - Elements 0 to 11 - with each day encompassing
@@ -326,7 +317,7 @@ WeatherProvider.register("envcanada", {
 		days.push(weather);
 
 		//
-		// Now do the the rest of the forecast starting at nextDay. We will process each day using 2 EC
+		// Now do the rest of the forecast starting at nextDay. We will process each day using 2 EC
 		// forecast Elements. This will address the fact that the EC forecast always includes Today and
 		// Tonight for each day. This is why we iterate through the forecast by a a count of 2, with each
 		// iteration looking at the current Element and the next Element.
@@ -335,21 +326,19 @@ WeatherProvider.register("envcanada", {
 		let lastDate = moment(baseDate, "YYYYMMDDhhmmss");
 
 		for (let stepDay = nextDay; stepDay < lastDay; stepDay += 2) {
-			let weather = new WeatherObject(this.config.units, this.config.tempUnits, this.config.windUnits);
+			let weather = new WeatherObject();
 
 			// Add 1 to the date to reflect the current forecast day we are building
 
 			lastDate = lastDate.add(1, "day");
-			weather.date = moment(lastDate, "X");
+			weather.date = moment(lastDate);
 
 			// Capture the temperatures for the current Element and the next Element in order to set
 			// the Min and Max temperatures for the forecast
 
 			this.setMinMaxTemps(weather, foreGroup, stepDay, true, currentTemp);
 
-			weather.rain = null;
-			weather.snow = null;
-			weather.precipitation = null;
+			weather.precipitationAmount = null;
 
 			this.setPrecipitation(weather, foreGroup, stepDay);
 
@@ -371,7 +360,7 @@ WeatherProvider.register("envcanada", {
 	// Generate an array of WeatherObjects based on EC hourly weather forecast
 	//
 
-	generateWeatherObjectsFromHourly(ECdoc) {
+	generateWeatherObjectsFromHourly (ECdoc) {
 		// Declare an array to hold each hour's forecast object
 
 		const hours = [];
@@ -389,25 +378,24 @@ WeatherProvider.register("envcanada", {
 		const hourGroup = ECdoc.querySelectorAll("siteData hourlyForecastGroup hourlyForecast");
 
 		for (let stepHour = 0; stepHour < 24; stepHour += 1) {
-			const weather = new WeatherObject(this.config.units, this.config.tempUnits, this.config.windUnits);
+			const weather = new WeatherObject();
 
 			// Determine local time by applying UTC offset to the forecast timestamp
 
 			const foreTime = moment(hourGroup[stepHour].getAttribute("dateTimeUTC"), "YYYYMMDDhhmmss");
 			const currTime = foreTime.add(hourOffset, "hours");
-			weather.date = moment(currTime, "X");
+			weather.date = moment(currTime);
 
 			// Capture the temperature
 
-			weather.temperature = this.convertTemp(hourGroup[stepHour].querySelector("temperature").textContent);
+			weather.temperature = hourGroup[stepHour].querySelector("temperature").textContent;
 
 			// Capture Likelihood of Precipitation (LOP) and unit-of-measure values
 
 			const precipLOP = hourGroup[stepHour].querySelector("lop").textContent * 1.0;
 
 			if (precipLOP > 0) {
-				weather.precipitation = precipLOP;
-				weather.precipitationUnits = hourGroup[stepHour].querySelector("lop").getAttribute("units");
+				weather.precipitationProbability = precipLOP;
 			}
 
 			//
@@ -428,7 +416,7 @@ WeatherProvider.register("envcanada", {
 	// the next Forecast element should be considered - i.e. look at Today *and* Tonight vs.Tonight-only
 	//
 
-	setMinMaxTemps(weather, foreGroup, today, fullDay, currentTemp) {
+	setMinMaxTemps (weather, foreGroup, today, fullDay, currentTemp) {
 		const todayTemp = foreGroup[today].querySelector("temperatures temperature").textContent;
 
 		const todayClass = foreGroup[today].querySelector("temperatures temperature").getAttribute("class");
@@ -450,7 +438,7 @@ WeatherProvider.register("envcanada", {
 				weather.minTemperature = this.todayTempCacheMin;
 				weather.maxTemperature = this.todayTempCacheMax;
 			} else {
-				weather.minTemperature = this.convertTemp(currentTemp);
+				weather.minTemperature = currentTemp;
 				weather.maxTemperature = weather.minTemperature;
 			}
 		}
@@ -463,14 +451,14 @@ WeatherProvider.register("envcanada", {
 		//
 
 		if (todayClass === "low") {
-			weather.minTemperature = this.convertTemp(todayTemp);
+			weather.minTemperature = todayTemp;
 			if (today === 0 && fullDay === true) {
 				this.todayTempCacheMin = weather.minTemperature;
 			}
 		}
 
 		if (todayClass === "high") {
-			weather.maxTemperature = this.convertTemp(todayTemp);
+			weather.maxTemperature = todayTemp;
 			if (today === 0 && fullDay === true) {
 				this.todayTempCacheMax = weather.maxTemperature;
 			}
@@ -482,11 +470,11 @@ WeatherProvider.register("envcanada", {
 
 		if (fullDay === true) {
 			if (nextClass === "low") {
-				weather.minTemperature = this.convertTemp(nextTemp);
+				weather.minTemperature = nextTemp;
 			}
 
 			if (nextClass === "high") {
-				weather.maxTemperature = this.convertTemp(nextTemp);
+				weather.maxTemperature = nextTemp;
 			}
 		}
 	},
@@ -510,61 +498,23 @@ WeatherProvider.register("envcanada", {
 	// the nightime forecast after a certain point in that specific scenario.
 	//
 
-	setPrecipitation(weather, foreGroup, today) {
+	setPrecipitation (weather, foreGroup, today) {
 		if (foreGroup[today].querySelector("precipitation accumulation")) {
-			weather.precipitation = foreGroup[today].querySelector("precipitation accumulation amount").textContent * 1.0;
-
-			weather.precipitationUnits = " " + foreGroup[today].querySelector("precipitation accumulation amount").getAttribute("units");
-
-			if (this.config.units === "imperial") {
-				if (weather.precipitationUnits === " cm") {
-					weather.precipitation = (weather.precipitation * 0.394).toFixed(2);
-					weather.precipitationUnits = " in";
-				}
-				if (weather.precipitationUnits === " mm") {
-					weather.precipitation = (weather.precipitation * 0.0394).toFixed(2);
-					weather.precipitationUnits = " in";
-				}
-			}
+			weather.precipitationAmount = foreGroup[today].querySelector("precipitation accumulation amount").textContent * 1.0;
+			weather.precipitationUnits = foreGroup[today].querySelector("precipitation accumulation amount").getAttribute("units");
 		}
 
 		// Check Today element for POP
-
-		if (foreGroup[today].querySelector("abbreviatedForecast pop").textContent > 0) {
-			weather.precipitation = foreGroup[today].querySelector("abbreviatedForecast pop").textContent;
-			weather.precipitationUnits = foreGroup[today].querySelector("abbreviatedForecast pop").getAttribute("units");
-		}
-	},
-
-	//
-	// Unit conversions
-	//
-	//
-	// Convert C to F temps
-	//
-	convertTemp(temp) {
-		if (this.config.tempUnits === "imperial") {
-			return 1.8 * temp + 32;
-		} else {
-			return temp;
-		}
-	},
-
-	//
-	// Convert km/h to mph
-	//
-	convertWind(kilo) {
-		if (this.config.windUnits === "imperial") {
-			return kilo / 1.609344;
-		} else {
-			return kilo;
+		const precipPOP = foreGroup[today].querySelector("abbreviatedForecast pop").textContent * 1.0;
+		if (precipPOP > 0) {
+			weather.precipitationProbability = precipPOP;
 		}
 	},
 
 	//
 	// Convert the icons to a more usable name.
 	//
-	convertWeatherType(weatherType) {
+	convertWeatherType (weatherType) {
 		const weatherTypes = {
 			"00": "day-sunny",
 			"01": "day-sunny",
