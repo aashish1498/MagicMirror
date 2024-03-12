@@ -1,0 +1,6 @@
+[submodule "modules/MMM-PIR"]
+	path = modules/MMM-PIR
+	url = https://github.com/paviro/MMM-PIR-Sensor
+[submodule "modules/MMM-GoogleKeep"]
+	path = modules/MMM-GoogleKeep
+	url = https://github.com/taxilof/MMM-GoogleKeep
