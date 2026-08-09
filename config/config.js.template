@@ -1,6 +1,7 @@
 var config = {
     address: "localhost",
     port: 8080,
+    zoom: 0.75,
     ipWhitelist: ["127.0.0.1", "::ffff:127.0.0.1", "::1"],
     useHttps: false,
     language: "en",
@@ -113,6 +114,7 @@ var config = {
         {
             module: "newsfeed",
             position: "bottom_bar",
+	    disabled: true,
             config: {
                 feeds: [
                     {
@@ -133,6 +135,7 @@ var config = {
         {
             module: "MMM-PIR",
             position: "bottom_center",
+	    disabled: "true",
             config: {
                 sensorPin: 593,
                 delay: 30 * 60 * 1000,
